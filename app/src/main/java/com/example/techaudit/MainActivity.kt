@@ -35,7 +35,8 @@ class MainActivity : AppCompatActivity() {
         cargarDatosdeBaseDeDatos()
         
         binding.fabAgregar.setOnClickListener {
-            insertarRegistro()
+            val intent = Intent(this, AddEditActivity::class.java)
+            startActivity(intent)
         }
         
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
