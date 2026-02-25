@@ -11,7 +11,7 @@ import com.example.techaudit.model.AuditItem
 import com.example.techaudit.model.AuditStatus
 
 class AuditAdapter (
-    private val listaCategoria: MutableList<AuditItem>,
+    val listaCategoria: MutableList<AuditItem>,
     private val onItemSelected: (AuditItem) -> Unit
 ) : RecyclerView.Adapter<AuditAdapter.AuditViewHolder>() {
     inner class AuditViewHolder(val binding: ItemAuditBinding) :

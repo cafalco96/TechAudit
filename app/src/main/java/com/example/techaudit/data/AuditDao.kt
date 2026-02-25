@@ -30,7 +30,6 @@ interface AuditDao {
     suspend fun update(item: AuditItem)
 
     //Borrar todo (util para pruebas)
-    @Query("DELETE FROM equipos")
-    suspend fun deleteAll()
-
+    @Delete
+    suspend fun delete(item: AuditItem)
 }

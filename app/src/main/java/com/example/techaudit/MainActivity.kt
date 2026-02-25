@@ -8,7 +8,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.techaudit.adapter.AuditAdapter
 import com.example.techaudit.data.AuditDatabase
 import com.example.techaudit.databinding.ActivityMainBinding
@@ -33,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         
         setupRecyclerView()
         cargarDatosdeBaseDeDatos()
-        
+        configurarDeslizarParaBorrar()
         binding.fabAgregar.setOnClickListener {
             val intent = Intent(this, AddEditActivity::class.java)
             startActivity(intent)
@@ -49,12 +51,45 @@ class MainActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         // CORRECCIÓN: Inicializar la propiedad de clase 'adapter' directamente
         adapter = AuditAdapter(mutableListOf()) { itemSeleccionado ->
-            val intent = Intent(this, DetailActivity::class.java)
-            intent.putExtra("EXTRA_ITEM", itemSeleccionado)
+            val intent = Intent(this, AddEditActivity::class.java)
+            intent.putExtra("EXTRA_ITEM_EDITAR", itemSeleccionado)
             startActivity(intent)
         }
         binding.rvAuditoria.adapter = adapter
         binding.rvAuditoria.layoutManager = LinearLayoutManager(this)
+    }
+    private fun configurarDeslizarParaBorrar() {
+        val swipeHandler = object : ItemTouchHelper.SimpleCallback(
+            0, // No nos importa mover arriba/abajo
+            ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT // Permitir deslizar a izq y der
+        ) {
+            override fun onMove(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                target: RecyclerView.ViewHolder
+            ): Boolean = false
+
+            // Este método se dispara cuando el usuario suelta el dedo tras deslizar
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val posicion = viewHolder.adapterPosition
+                val itemABorrar = adapter.listaCategoria[posicion]
+
+                lifecycleScope.launch {
+                    // 1. Borrar de la Base de Datos
+                    database.auditDao().delete(itemABorrar)
+
+                    // 2. Borrar de la pantalla (Animación fluida)
+                    adapter.listaCategoria.removeAt(posicion)
+                    adapter.notifyItemRemoved(posicion)
+
+                    Toast.makeText(this@MainActivity, "Equipo Eliminado", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        // Conectamos este comportamiento a nuestra lista
+        val itemTouchHelper = ItemTouchHelper(swipeHandler)
+        itemTouchHelper.attachToRecyclerView(binding.rvAuditoria)
     }
 
     private fun cargarDatosdeBaseDeDatos() {
@@ -70,19 +105,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun insertarRegistro() {
-        val nuevoItem = AuditItem(
-            id = UUID.randomUUID().toString(),
-            nombre = "Equipo Nuevo #${(0 .. 100).random()}",
-            ubicacion = "Recepcion",
-            fechaRegistro = Date().toString(),
-            estado = AuditStatus.PENDIENTE,
-            notas = "Registro Aleatorio"
-        )
-        lifecycleScope.launch {
-            database.auditDao().insert(nuevoItem)
-            Toast.makeText(this@MainActivity, "Registro insertado", Toast.LENGTH_SHORT).show()
-            cargarDatosdeBaseDeDatos()
-        }
+    override fun onResume() {
+        super.onResume()
+        cargarDatosdeBaseDeDatos()
     }
 }
