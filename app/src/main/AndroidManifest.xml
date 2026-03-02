@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:name=".TechAuditApp"
         android:allowBackup="true"
@@ -14,17 +13,26 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TechAudit">
         <activity
+            android:name=".AddLabActivity"
+            android:exported="false"
+            android:label="Nuevo Laboratorio" />
+        <activity
+            android:name=".AuditListActivity"
+            android:exported="false"
+            android:label="Equipos del Laboratorio" />
+        <activity
             android:name=".AddEditActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:label="Gestión de Equipo" />
         <activity
             android:name=".DetailActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:label="Detalle del Equipo" />
         <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

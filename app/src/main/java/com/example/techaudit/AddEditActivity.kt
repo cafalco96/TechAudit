@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -11,13 +12,16 @@ import androidx.lifecycle.lifecycleScope
 import com.example.techaudit.databinding.ActivityAddEditBinding
 import com.example.techaudit.model.AuditItem
 import com.example.techaudit.model.AuditStatus
+import com.example.techaudit.ui.AuditViewModel
 import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
 
 class AddEditActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddEditBinding
+    private val viewModel: AuditViewModel by viewModels()
     private var itemEditar: AuditItem? = null
+    private var labId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,9 +29,10 @@ class AddEditActivity : AppCompatActivity() {
         binding = ActivityAddEditBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
+        labId = intent.getStringExtra("EXTRA_LAB_ID")
+        
         setupSpinner()
         
-        // Detectar modo edición
         if(intent.hasExtra("EXTRA_ITEM_EDITAR")) {
             itemEditar = if (android.os.Build.VERSION.SDK_INT >= 33) {
                 intent.getParcelableExtra("EXTRA_ITEM_EDITAR", AuditItem::class.java)
@@ -37,13 +42,13 @@ class AddEditActivity : AppCompatActivity() {
             }
         }
         
-        // Llenar campos si es edición
         itemEditar?.let { item -> 
             binding.etNombre.setText(item.nombre)
             binding.etUbicacion.setText(item.ubicacion)
             binding.etNotas.setText(item.notas)
             val posicionSpinner = AuditStatus.values().indexOf(item.estado)
             binding.spEstado.setSelection(posicionSpinner)
+            labId = item.laboratorioId
         }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
@@ -59,11 +64,7 @@ class AddEditActivity : AppCompatActivity() {
     
     private fun setupSpinner() {
         val estados = AuditStatus.values()
-        val adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            estados
-        )
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, estados)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.spEstado.adapter = adapter
     }
@@ -73,37 +74,35 @@ class AddEditActivity : AppCompatActivity() {
         val ubicacion = binding.etUbicacion.text.toString()
         val notas = binding.etNotas.text.toString()
 
-        if (nombre.isBlank() || ubicacion.isBlank()) {
-            Toast.makeText(this, "Nombre y Ubicación son obligatorios", Toast.LENGTH_SHORT).show()
+        if (nombre.isBlank() || ubicacion.isBlank() || labId == null) {
+            Toast.makeText(this, "Nombre y ubicación son obligatorios", Toast.LENGTH_SHORT).show()
             return
         }
 
         val estadoSeleccionado = binding.spEstado.selectedItem as AuditStatus
-        val database = (application as TechAuditApp).database
 
-        lifecycleScope.launch {
-            if (itemEditar == null) {
-                val nuevoItem = AuditItem(
-                    id = UUID.randomUUID().toString(),
-                    nombre = nombre,
-                    ubicacion = ubicacion,
-                    fechaRegistro = Date().toString(),
-                    estado = estadoSeleccionado,
-                    notas = notas
-                )
-                database.auditDao().insert(nuevoItem)
-                Toast.makeText(this@AddEditActivity, "Equipo Agregado", Toast.LENGTH_SHORT).show()
-            } else {
-                val itemActualizado = itemEditar!!.copy(
-                    nombre = nombre,
-                    ubicacion = ubicacion,
-                    estado = estadoSeleccionado,
-                    notas = notas
-                )
-                database.auditDao().update(itemActualizado)
-                Toast.makeText(this@AddEditActivity, "Equipo Actualizado", Toast.LENGTH_SHORT).show()
-            }
-            finish()
+        if (itemEditar == null) {
+            val nuevoItem = AuditItem(
+                id = UUID.randomUUID().toString(),
+                nombre = nombre,
+                ubicacion = ubicacion,
+                laboratorioId = labId!!,
+                fechaRegistro = Date().toString(),
+                estado = estadoSeleccionado,
+                notas = notas
+            )
+            viewModel.insert(nuevoItem)
+            Toast.makeText(this, "Equipo Agregado", Toast.LENGTH_SHORT).show()
+        } else {
+            val itemActualizado = itemEditar!!.copy(
+                nombre = nombre,
+                ubicacion = ubicacion,
+                estado = estadoSeleccionado,
+                notas = notas
+            )
+            viewModel.update(itemActualizado)
+            Toast.makeText(this, "Equipo Actualizado", Toast.LENGTH_SHORT).show()
         }
+        finish()
     }
 }
