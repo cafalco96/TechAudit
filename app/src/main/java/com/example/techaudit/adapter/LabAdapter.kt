@@ -8,7 +8,8 @@ import com.example.techaudit.model.AuditLab
 
 class LabAdapter(
     private var list: List<AuditLab>,
-    private val onItemSelected: (AuditLab) -> Unit
+    private val onItemSelected: (AuditLab) -> Unit,
+    private val onItemLongClicked: (AuditLab) -> Unit
 ) : RecyclerView.Adapter<LabAdapter.LabViewHolder>() {
 
     inner class LabViewHolder(val binding: ItemLabBinding) : RecyclerView.ViewHolder(binding.root)
@@ -22,7 +23,13 @@ class LabAdapter(
         val lab = list[position]
         holder.binding.tvNombreLab.text = lab.nombre
         holder.binding.tvEdificioLab.text = lab.edificio
+        
         holder.itemView.setOnClickListener { onItemSelected(lab) }
+        
+        holder.itemView.setOnLongClickListener {
+            onItemLongClicked(lab)
+            true
+        }
     }
 
     override fun getItemCount(): Int = list.size
@@ -30,5 +37,9 @@ class LabAdapter(
     fun updateList(newList: List<AuditLab>) {
         list = newList
         notifyDataSetChanged()
+    }
+
+    fun getLabAt(position: Int): AuditLab {
+        return list[position]
     }
 }

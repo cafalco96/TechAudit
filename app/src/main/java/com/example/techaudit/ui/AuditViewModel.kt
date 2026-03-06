@@ -13,11 +13,30 @@ class AuditViewModel(application: Application) : AndroidViewModel(application) {
     val allItems: LiveData<List<AuditItem>>
     val allLabs: LiveData<List<AuditLab>>
 
+    private val _syncStatus = MutableLiveData<SyncStatus>()
+    val syncStatus: LiveData<SyncStatus> = _syncStatus
+
     init {
-        val dao = (application as TechAuditApp).database.auditDao()
-        repository = AuditRepository(dao)
+        val app = application as TechAuditApp
+        val dao = app.database.auditDao()
+        val apiService = app.apiService
+        repository = AuditRepository(dao, apiService)
         allItems = repository.allItems.asLiveData()
         allLabs = repository.allLabs.asLiveData()
+    }
+
+    fun syncData() = viewModelScope.launch {
+        _syncStatus.value = SyncStatus.Loading
+        val result = repository.syncWithApi()
+        if (result.isSuccess) {
+            _syncStatus.value = SyncStatus.Success("Sincronización completada con éxito")
+        } else {
+            _syncStatus.value = SyncStatus.Error(result.exceptionOrNull()?.message ?: "Error desconocido")
+        }
+    }
+
+    fun resetSyncStatus() {
+        _syncStatus.value = SyncStatus.Idle
     }
 
     fun getItemsByLab(labId: String): LiveData<List<AuditItem>> {
@@ -30,6 +49,14 @@ class AuditViewModel(application: Application) : AndroidViewModel(application) {
         repository.insertLab(lab)
     }
 
+    fun updateLab(lab: AuditLab) = viewModelScope.launch {
+        repository.updateLab(lab)
+    }
+
+    fun deleteLab(lab: AuditLab) = viewModelScope.launch {
+        repository.deleteLab(lab)
+    }
+
     fun insert(item: AuditItem) = viewModelScope.launch {
         repository.insert(item)
     }
@@ -40,5 +67,12 @@ class AuditViewModel(application: Application) : AndroidViewModel(application) {
 
     fun delete(item: AuditItem) = viewModelScope.launch {
         repository.delete(item)
+    }
+
+    sealed class SyncStatus {
+        object Idle : SyncStatus()
+        object Loading : SyncStatus()
+        data class Success(val message: String) : SyncStatus()
+        data class Error(val message: String) : SyncStatus()
     }
 }

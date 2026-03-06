@@ -27,6 +27,9 @@ interface AuditDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertLab(lab: AuditLab)
 
+    @Update
+    suspend fun updateLab(lab: AuditLab)
+
     @Delete
     suspend fun deleteLab(lab: AuditLab)
 }

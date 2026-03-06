@@ -13,12 +13,21 @@ import java.util.UUID
 class AddLabActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddLabBinding
     private val viewModel: AuditViewModel by viewModels()
+    private var labAEditar: AuditLab? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         binding = ActivityAddLabBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        labAEditar = intent.getParcelableExtra("EXTRA_LAB")
+        
+        if (labAEditar != null) {
+            binding.etNombreLab.setText(labAEditar?.nombre)
+            binding.etEdificioLab.setText(labAEditar?.edificio)
+            binding.btnGuardarLab.text = "Actualizar Laboratorio"
+        }
 
         binding.btnGuardarLab.setOnClickListener {
             guardarLab()
@@ -34,14 +43,19 @@ class AddLabActivity : AppCompatActivity() {
             return
         }
 
-        val nuevoLab = AuditLab(
-            id = UUID.randomUUID().toString(),
-            nombre = nombre,
-            edificio = edificio
-        )
-
-        viewModel.insertLab(nuevoLab)
-        Toast.makeText(this, "Laboratorio Guardado", Toast.LENGTH_SHORT).show()
+        if (labAEditar != null) {
+            val labActualizado = labAEditar!!.copy(nombre = nombre, edificio = edificio)
+            viewModel.updateLab(labActualizado)
+            Toast.makeText(this, "Laboratorio Actualizado", Toast.LENGTH_SHORT).show()
+        } else {
+            val nuevoLab = AuditLab(
+                id = UUID.randomUUID().toString(),
+                nombre = nombre,
+                edificio = edificio
+            )
+            viewModel.insertLab(nuevoLab)
+            Toast.makeText(this, "Laboratorio Guardado", Toast.LENGTH_SHORT).show()
+        }
         finish()
     }
 }
